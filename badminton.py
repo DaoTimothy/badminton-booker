@@ -46,5 +46,4 @@ f = open("info.txt", "r")
 lines = f.readlines()
 bookings = int(len(lines)/3)
 for i in range (0,bookings):
-    print(i)
     book("Badminton", "Thursday", "11:30", lines[3*i], lines[3*i + 1], lines[3*i + 2])
