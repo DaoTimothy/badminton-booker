@@ -3,9 +3,12 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 import time as timer
+import email 
+
+from imapclient import IMAPClient
+
 browser = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
-browser.get('https://reservation.frontdesksuite.ca/rcfs/nepeansportsplex/Home/Index?Culture=en&PageId=b0d362a1-ba36-42ae-b1e0-feefaf43fe4c&ShouldStartReserveTimeFlow=False&ButtonId=00000000-0000-0000-0000-000000000000')
-    
+   
 def book(sport, day, time, phoneNumber, emailAddress, bookingName):
     browser.get('https://reservation.frontdesksuite.ca/rcfs/nepeansportsplex/Home/Index?Culture=en&PageId=b0d362a1-ba36-42ae-b1e0-feefaf43fe4c&ShouldStartReserveTimeFlow=False&ButtonId=00000000-0000-0000-0000-000000000000')
     try:
@@ -36,7 +39,6 @@ def book(sport, day, time, phoneNumber, emailAddress, bookingName):
                     if time in text:
                         parent = element.find_element(By.XPATH, "./..")
                         parent.click()
-                        timer.sleep(1)
                         #info page
                         phonenumber = browser.find_element(By.NAME, "PhoneNumber")
                         phonenumber.send_keys(phoneNumber)
@@ -46,7 +48,16 @@ def book(sport, day, time, phoneNumber, emailAddress, bookingName):
                         name.send_keys(bookingName)
                         submit = browser.find_element(By.ID, "submit-btn")
                         submit.click()
-                        timer.sleep(10000)
+                        # wait for the email to come in
+                        verification = "fail"
+                        while verification == "fail":
+                            verification = readEmail()
+                        verificationBox = browser.find_element(By.ID, "code")
+                        verificationBox.send_keys(str(verification))
+                        submit = browser.find_element(By.CLASS_NAME, "mdc-button")
+                        submit.click()
+                        submit = browser.find_element(By.ID, "submit-btn")
+                        submit.click()
                         # try: 
                         #     
                         #     #real final page
@@ -77,14 +88,33 @@ def ping(sport, day):
             if day in text:
                 return True
         return False
-s = "Pickleball"
-d = "Friday"
-t = "11:30 AM"
+
+s = "Badminton"
+d = "Sunday"
+t = "8:00 AM"
 p = "6138094885"
-e = "timeluicifer@gmail.com"
+e = "mikaelboothsport@outlook.com"
+password = "badminton1234"
 n = "Mikael Booth"
-result = ping(s, d)
-while(not result):
+
+def readEmail(): 
+    server = IMAPClient('outlook.office365.com', use_uid=True, ssl=True)
+    server.login("mikaelboothsport@outlook.com", "badminton1234")
+    inboxInfo = server.select_folder('INBOX')
+    messages = server.search(['FROM', 'noreply@frontdesksuite.com'])
+    if(len(messages) == 0):
+        server.logout()
+        return "fail"
+    response = server.fetch(messages[0], ['RFC822', 'BODY[TEXT]'])
+    emailBody = str(response[messages[0]][b'BODY[TEXT]'])
+    server.delete_messages(messages[0])
+    server.logout()
+    return emailBody[32:36]
+
+def foo():
     result = ping(s, d)
-book(s, d, t, p, e, n)
-# book("Badminton", "Sunday", "8:00", "6138094885", "timeluicifer@gmail.com", "Mikael Booth")
+    while(not result):
+        result = ping(s, d)
+    book(s, d, t, p, e, n)
+foo()
+# readEmail()
